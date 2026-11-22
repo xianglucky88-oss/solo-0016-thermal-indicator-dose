@@ -1,5 +1,5 @@
 {
-  "project_shape": "backend",
+  "project_shape": "fullstack",
   "modules": [
     {
       "id": "curve",
@@ -12,11 +12,6 @@
       "responsibility": "Derive experiment dispositions and time ranges from the dose evidence."
     },
     {
-      "id": "example",
-      "path": "thermal/example.py",
-      "responsibility": "Send the bundled synthetic input to an ephemeral local HTTP service."
-    },
-    {
       "id": "exposure",
       "path": "thermal/exposure.py",
       "responsibility": "Integrate response on covered spans and keep missing time explicit."
@@ -27,14 +22,139 @@
       "responsibility": "Local JSON transport for 包装温度指示换算; only loopback is exposed."
     },
     {
-      "id": "http_api",
-      "path": "thermal/http_api.py",
-      "responsibility": "Local JSON transport for 包装温度指示换算; only loopback is exposed."
+      "id": "wb_errors",
+      "path": "workbench/errors.py",
+      "responsibility": "API 业务错误及 HTTP 状态"
     },
     {
-      "id": "example",
-      "path": "thermal/example.py",
-      "responsibility": "Send the bundled synthetic input to an ephemeral local HTTP service."
+      "id": "wb_codec",
+      "path": "workbench/codec.py",
+      "responsibility": "JSON/标识校验、规范化与摘要"
+    },
+    {
+      "id": "wb_db",
+      "path": "workbench/db.py",
+      "responsibility": "SQLite 初始化、事务边界和产品隔离"
+    },
+    {
+      "id": "wb_catalog",
+      "path": "workbench/catalog.py",
+      "responsibility": "当前指针查询和版本归属"
+    },
+    {
+      "id": "wb_history",
+      "path": "workbench/history.py",
+      "responsibility": "导入单、版本及发布事件的只读历史"
+    },
+    {
+      "id": "wb_operations",
+      "path": "workbench/operations.py",
+      "responsibility": "加工注册与输入验证"
+    },
+    {
+      "id": "wb_intake",
+      "path": "workbench/intake.py",
+      "responsibility": "原料校验、去重及暂存单落库"
+    },
+    {
+      "id": "wb_publication",
+      "path": "workbench/publication.py",
+      "responsibility": "比较代次后发布或恢复指针"
+    },
+    {
+      "id": "wb_runs",
+      "path": "workbench/runs.py",
+      "responsibility": "批次固定版本、运行缓存和历史复算"
+    },
+    {
+      "id": "wb_comparison",
+      "path": "workbench/comparison.py",
+      "responsibility": "同数据集版本与加工产出对读"
+    },
+    {
+      "id": "wb_evidence",
+      "path": "workbench/evidence.py",
+      "responsibility": "原料和加工结果的完整性校验与导出"
+    },
+    {
+      "id": "wb_service",
+      "path": "workbench/service.py",
+      "responsibility": "API 与事务入口路由"
+    },
+    {
+      "id": "wb_assets",
+      "path": "workbench/assets.py",
+      "responsibility": "本机静态资源白名单"
+    },
+    {
+      "id": "wb_http",
+      "path": "workbench/http.py",
+      "responsibility": "本机 HTTP、请求体与响应边界"
+    },
+    {
+      "id": "wb___main__",
+      "path": "workbench/__main__.py",
+      "responsibility": "参数解析和服务启动"
+    },
+    {
+      "id": "wb_profile",
+      "path": "workbench/profile.py",
+      "responsibility": "领域操作名称、入口和样本绑定"
+    },
+    {
+      "id": "gap_register",
+      "path": "thermal/gap_register.py",
+      "responsibility": "断档清单"
+    },
+    {
+      "id": "calibration_review",
+      "path": "thermal/calibration_review.py",
+      "responsibility": "平行校准复核"
+    },
+    {
+      "id": "interval_accounts",
+      "path": "thermal/interval_accounts.py",
+      "responsibility": "分段剂量账"
+    },
+    {
+      "id": "ui_index_html",
+      "path": "web/index.html",
+      "responsibility": "页面表单和语义结构"
+    },
+    {
+      "id": "ui_theme_css",
+      "path": "web/theme.css",
+      "responsibility": "样式和响应式排版"
+    },
+    {
+      "id": "ui_api_js",
+      "path": "web/api.js",
+      "responsibility": "请求和错误翻译"
+    },
+    {
+      "id": "ui_app_js",
+      "path": "web/app.js",
+      "responsibility": "数据集会话状态"
+    },
+    {
+      "id": "ui_intake_js",
+      "path": "web/intake.js",
+      "responsibility": "上传表单和暂存发布操作"
+    },
+    {
+      "id": "ui_revisions_js",
+      "path": "web/revisions.js",
+      "responsibility": "修订对比、发布历史和历史恢复"
+    },
+    {
+      "id": "ui_results_js",
+      "path": "web/results.js",
+      "responsibility": "运行表单、结果、复算与导出"
+    },
+    {
+      "id": "wb_schema",
+      "path": "workbench/schema.sql",
+      "responsibility": "版本归属、外键和运行唯一性约束"
     }
   ],
   "workflows": [
@@ -88,13 +208,208 @@
         "解析项目专用输入并验证前置条件",
         "输出可确认区间和未知断段"
       ]
+    },
+    {
+      "id": "wb-stage",
+      "name": "校验原料并返回暂存单",
+      "entry": "POST /api/stage",
+      "success": "校验原料并返回暂存单",
+      "failure": "记录被拒绝原料",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_intake",
+        "wb_operations",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "校验原料并返回暂存单"
+      ]
+    },
+    {
+      "id": "wb-publish",
+      "name": "发布新修订并推进代次",
+      "entry": "POST /api/publish",
+      "success": "发布新修订并推进代次",
+      "failure": "拒绝过期暂存单",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_publication",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "发布新修订并推进代次"
+      ]
+    },
+    {
+      "id": "wb-history",
+      "name": "读取版本、发布事件和暂存单",
+      "entry": "POST /api/history",
+      "success": "读取版本、发布事件和暂存单",
+      "failure": "空数据集正常返回",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_history",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "读取版本、发布事件和暂存单"
+      ]
+    },
+    {
+      "id": "wb-restore",
+      "name": "恢复历史版本，不修改原料",
+      "entry": "POST /api/restore",
+      "success": "恢复历史版本，不修改原料",
+      "failure": "拒绝过期或跨数据集版本",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_publication",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "恢复历史版本，不修改原料"
+      ]
+    },
+    {
+      "id": "wb-batch",
+      "name": "同批固定版本并产生各加工结果",
+      "entry": "POST /api/run",
+      "success": "同批固定版本并产生各加工结果",
+      "failure": "单项失败不留下部分结果",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "同批固定版本并产生各加工结果"
+      ]
+    },
+    {
+      "id": "wb-replay",
+      "name": "按固定引擎标签和修订复算",
+      "entry": "POST /api/replay",
+      "success": "按固定引擎标签和修订复算",
+      "failure": "引擎不可用时明确拒绝",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_runs",
+        "wb_catalog",
+        "wb_operations"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "按固定引擎标签和修订复算"
+      ]
+    },
+    {
+      "id": "wb-compare",
+      "name": "区分输入变化和产出变化",
+      "entry": "POST /api/compare",
+      "success": "区分输入变化和产出变化",
+      "failure": "拒绝跨数据集对比",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_comparison",
+        "wb_catalog",
+        "wb_operations"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "区分输入变化和产出变化"
+      ]
+    },
+    {
+      "id": "wb-export",
+      "name": "校验摘要后导出原料与结果",
+      "entry": "GET /api/evidence/{run}",
+      "success": "校验摘要后导出原料与结果",
+      "failure": "证据校验错时拒绝导出",
+      "verification": "python3 -B examples/workbench_check.py",
+      "module_ids": [
+        "wb_evidence",
+        "wb_runs",
+        "wb_catalog",
+        "wb_codec"
+      ],
+      "steps": [
+        "从工作台或本机 HTTP 提交",
+        "校验摘要后导出原料与结果"
+      ]
+    },
+    {
+      "id": "wb-gap-register",
+      "entry": "POST /api/run (gap-register)",
+      "name": "断档清单",
+      "success": "按固定原料版本输出断档清单",
+      "failure": "原料不合法时不生成成品",
+      "verification": "python3 -B examples/workbench_check.py gap-register",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "gap_register"
+      ],
+      "steps": [
+        "固定输入修订",
+        "断档清单"
+      ]
+    },
+    {
+      "id": "wb-calibration-review",
+      "entry": "POST /api/run (calibration-review)",
+      "name": "平行校准复核",
+      "success": "按固定原料版本输出平行校准复核",
+      "failure": "原料不合法时不生成成品",
+      "verification": "python3 -B examples/workbench_check.py calibration-review",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "calibration_review"
+      ],
+      "steps": [
+        "固定输入修订",
+        "平行校准复核"
+      ]
+    },
+    {
+      "id": "wb-interval-accounts",
+      "entry": "POST /api/run (interval-accounts)",
+      "name": "分段剂量账",
+      "success": "按固定原料版本输出分段剂量账",
+      "failure": "原料不合法时不生成成品",
+      "verification": "python3 -B examples/workbench_check.py interval-accounts",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "interval_accounts"
+      ],
+      "steps": [
+        "固定输入修订",
+        "分段剂量账"
+      ]
     }
   ],
   "complexity": {
     "mechanisms": [
       "温度以毫摄氏度、时间以秒输入；响应速率按提供的结点分段线性，不外推。",
       "当相邻样点间距不超过 `max_gap_s` 时按线性温度路径积分并切过所有结点；超过时仅假设温度处于曲线定义域，取最低及最高速率界。",
-      "阈值判读采用含等号的达到规则。速率等于阈值的孤立时刻不列为时段。只处理首末观测之间。"
+      "阈值判读采用含等号的达到规则。速率等于阈值的孤立时刻不列为时段。只处理首末观测之间。",
+      "按发布代次进行事务更新",
+      "保留原始输入与规范化版本",
+      "原子批加工",
+      "固定修订复算",
+      "导出前校验证据摘要"
     ]
   }
 }
