@@ -66,6 +66,30 @@
     {
       "workflow_id": "wb-interval-accounts",
       "command": "python3 -B examples/workbench_check.py interval-accounts"
+    },
+    {
+      "workflow_id": "wb-checkpoints",
+      "command": "python3 -B examples/workbench_check.py checkpoints"
+    },
+    {
+      "workflow_id": "wb-review",
+      "command": "python3 -B examples/workbench_check.py checkpoints"
+    },
+    {
+      "workflow_id": "wb-dispatch",
+      "command": "python3 -B examples/workbench_check.py checkpoints"
+    },
+    {
+      "workflow_id": "wb-cold-spot",
+      "command": "python3 -B examples/workbench_check.py cold-spot"
+    },
+    {
+      "workflow_id": "wb-cold-windows",
+      "command": "python3 -B examples/workbench_check.py cold-windows"
+    },
+    {
+      "workflow_id": "wb-clock-alignment",
+      "command": "python3 -B examples/workbench_check.py clock-alignment"
     }
   ]
 }

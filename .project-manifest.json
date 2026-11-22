@@ -155,6 +155,46 @@
       "id": "wb_schema",
       "path": "workbench/schema.sql",
       "responsibility": "版本归属、外键和运行唯一性约束"
+    },
+    {
+      "id": "checkpoints",
+      "path": "thermal/checkpoints.py",
+      "responsibility": "按事先给定的时刻累计剂量上下界及缺测秒数，归档各时刻判定"
+    },
+    {
+      "id": "wb_review",
+      "path": "workbench/review.py",
+      "responsibility": "按当前发布代次和领域资格复核加工成品"
+    },
+    {
+      "id": "wb_dispatch",
+      "path": "workbench/dispatch.py",
+      "responsibility": "签发及复验绑定复核和原证据的交接凭据"
+    },
+    {
+      "id": "wb_handoff_schema",
+      "path": "workbench/handoff.sql",
+      "responsibility": "复核状态、代次归属及一单一交接的持久化约束"
+    },
+    {
+      "id": "ui_review_js",
+      "path": "web/review.js",
+      "responsibility": "展示运行复核历史并发起复核和签发操作"
+    },
+    {
+      "id": "cold_spot",
+      "path": "thermal/cold_spot.py",
+      "responsibility": "按同一包装内两个空间测点的逐时较低温度精确积分，保留交换时点和分段剂量界。"
+    },
+    {
+      "id": "cold_windows",
+      "path": "thermal/cold_windows.py",
+      "responsibility": "在各作业窗内按真实测点覆盖截取响应积分，保留该窗的剂量界及来源切换。"
+    },
+    {
+      "id": "clock_alignment",
+      "path": "thermal/clock_alignment.py",
+      "responsibility": "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。"
     }
   ],
   "workflows": [
@@ -398,6 +438,129 @@
         "固定输入修订",
         "分段剂量账"
       ]
+    },
+    {
+      "id": "wb-checkpoints",
+      "name": "累计剂量检查点",
+      "entry": "POST /api/run (checkpoints)",
+      "success": "按事先给定的时刻累计剂量上下界及缺测秒数，归档各时刻判定",
+      "failure": "上下界跨过目标仍待核；拒绝观测范围外的检查点",
+      "verification": "python3 -B examples/workbench_check.py checkpoints",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "checkpoints",
+        "interval_accounts",
+        "exposure",
+        "curve"
+      ],
+      "steps": [
+        "固定同一份已发布的原料修订",
+        "按事先给定的时刻累计剂量上下界及缺测秒数，归档各时刻判定",
+        "写成可复算并可导出证据的产出"
+      ]
+    },
+    {
+      "id": "wb-review",
+      "name": "业务成品复核",
+      "entry": "POST /api/review/open + /api/review/decide",
+      "success": "复核绑定运行与当前发布代次；可批准合格结果，也可保留退回的记录。",
+      "failure": "领域未过或代次已过时不能批准；已决定的单据不能改判。",
+      "module_ids": [
+        "wb_review",
+        "wb_evidence",
+        "wb_runs",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "verification": "python3 -B examples/workbench_check.py checkpoints",
+      "steps": [
+        "核对运行的原稿、规范化输入和产出摘要",
+        "按领域条件计算可否放行",
+        "绑定发布代次并持久化复核结论"
+      ]
+    },
+    {
+      "id": "wb-dispatch",
+      "name": "签发交接凭据",
+      "entry": "POST /api/dispatch + GET /api/dispatch/{review}",
+      "success": "通过复核后签发绑定原始原料和领域成品的凭据；已经签发的历史凭据可以再次下载。",
+      "failure": "复核已批准但尚未签发时若发布代次变化，拒绝新签发；恢复相同修订不复用旧批准。",
+      "module_ids": [
+        "wb_dispatch",
+        "wb_review",
+        "wb_evidence",
+        "wb_catalog",
+        "wb_db"
+      ],
+      "verification": "python3 -B examples/workbench_check.py checkpoints",
+      "steps": [
+        "读取已通过的复核及当前发布指针",
+        "核验证据并写入凭据摘要",
+        "下载时再验摘要，不用当前原料替换旧证据"
+      ]
+    },
+    {
+      "id": "wb-cold-spot",
+      "name": "双位置冷点剂量",
+      "entry": "POST /api/run (cold-spot)",
+      "success": "按同一包装内两个空间测点的逐时较低温度精确积分，保留交换时点和分段剂量界。",
+      "failure": "缺一个测点时已观测点只提供冷点上界，两点都缺时给全响应范围，不能填成确定剂量。",
+      "verification": "python3 -B examples/workbench_check.py cold-spot",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "cold_spot",
+        "exposure",
+        "curve"
+      ],
+      "steps": [
+        "固定原料修订",
+        "按同一包装内两个空间测点的逐时较低温度精确积分，保留交换时点和分段剂量界。",
+        "更正原料后对读旧产出、复算并导出原证据"
+      ]
+    },
+    {
+      "id": "wb-cold-windows",
+      "name": "冷点分窗凭据",
+      "entry": "POST /api/run (cold-windows)",
+      "success": "在各作业窗内按真实测点覆盖截取响应积分，保留该窗的剂量界及来源切换。",
+      "failure": "窗首尾落入采样长断档时，不能因所选窗本身很短而把断档当成可插值。",
+      "verification": "python3 -B examples/workbench_check.py cold-windows",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "cold_windows",
+        "cold_spot",
+        "curve",
+        "exposure"
+      ],
+      "steps": [
+        "固定原料修订",
+        "在各作业窗内按真实测点覆盖截取响应积分，保留该窗的剂量界及来源切换。",
+        "更正原料后对读旧产出、复算并导出原证据"
+      ]
+    },
+    {
+      "id": "wb-clock-alignment",
+      "name": "双钟对时与剂量",
+      "entry": "POST /api/run (clock-alignment)",
+      "success": "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。",
+      "failure": "整数 tick 不代表固定一秒；无法精确落到现有整秒合同的数据不靠四舍五入放行。",
+      "verification": "python3 -B examples/workbench_check.py clock-alignment",
+      "module_ids": [
+        "wb_runs",
+        "wb_operations",
+        "clock_alignment",
+        "cold_windows",
+        "cold_spot",
+        "exposure"
+      ],
+      "steps": [
+        "固定原料修订",
+        "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。",
+        "更正原料后对读旧产出、复算并导出原证据"
+      ]
     }
   ],
   "complexity": {
@@ -409,7 +572,13 @@
       "保留原始输入与规范化版本",
       "原子批加工",
       "固定修订复算",
-      "导出前校验证据摘要"
+      "导出前校验证据摘要",
+      "按事先给定的时刻累计剂量上下界及缺测秒数，归档各时刻判定",
+      "按领域资格与发布代次审批",
+      "校验证据、审批与当前指针后签发，历史凭据重试不重新决策",
+      "按同一包装内两个空间测点的逐时较低温度精确积分，保留交换时点和分段剂量界。",
+      "在各作业窗内按真实测点覆盖截取响应积分，保留该窗的剂量界及来源切换。",
+      "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。"
     ]
   }
 }

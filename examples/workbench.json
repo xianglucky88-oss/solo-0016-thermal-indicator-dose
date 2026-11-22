@@ -31,6 +31,10 @@
       10000
     ]
   ],
+  "inner_position_samples": [[0, 20000], [6, 0], [10, 0], [16, 10000], [25, 20000], [30, 0]],
+  "cold_windows": {"entry": [1, 3, 1], "handover": [17, 19, 5]},
+  "clock_alignment": {"sync": [[0, 0], [60, 30]],
+                      "samples": [[0, 20000], [12, 0], [20, 0], [32, 10000], [50, 20000], [60, 0]]},
   "max_gap_s": 10,
   "target_dose": 100,
   "rate_threshold": 5,
@@ -60,6 +64,7 @@
       ]
     ]
   },
+  "inspection_seconds": [0, 10, 18, 30],
   "report_cuts_s": [
     5,
     18,
