@@ -1,0 +1,23 @@
+{
+  "language": "Python 3.11+ (stdlib)",
+  "project_shape": "backend",
+  "source_extensions": [
+    ".py"
+  ],
+  "build_command": "python3 -B -c \"from pathlib import Path; [compile(p.read_bytes(), str(p), 'exec') for p in Path('thermal').glob('*.py')]\"",
+  "testing": "deferred",
+  "workflow_checks": [
+    {
+      "workflow_id": "dose",
+      "command": "python3 -B -m thermal.example /indicator/dose"
+    },
+    {
+      "workflow_id": "disposition",
+      "command": "python3 -B -m thermal.example /indicator/disposition"
+    },
+    {
+      "workflow_id": "rate-windows",
+      "command": "python3 -B -m thermal.example /indicator/rate-windows"
+    }
+  ]
+}

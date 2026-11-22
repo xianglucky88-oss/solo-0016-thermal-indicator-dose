@@ -1,0 +1,100 @@
+{
+  "project_shape": "backend",
+  "modules": [
+    {
+      "id": "curve",
+      "path": "thermal/curve.py",
+      "responsibility": "Piecewise-linear synthetic indicator response, with no extrapolation."
+    },
+    {
+      "id": "decision",
+      "path": "thermal/decision.py",
+      "responsibility": "Derive experiment dispositions and time ranges from the dose evidence."
+    },
+    {
+      "id": "example",
+      "path": "thermal/example.py",
+      "responsibility": "Send the bundled synthetic input to an ephemeral local HTTP service."
+    },
+    {
+      "id": "exposure",
+      "path": "thermal/exposure.py",
+      "responsibility": "Integrate response on covered spans and keep missing time explicit."
+    },
+    {
+      "id": "http_api",
+      "path": "thermal/http_api.py",
+      "responsibility": "Local JSON transport for 包装温度指示换算; only loopback is exposed."
+    },
+    {
+      "id": "http_api",
+      "path": "thermal/http_api.py",
+      "responsibility": "Local JSON transport for 包装温度指示换算; only loopback is exposed."
+    },
+    {
+      "id": "example",
+      "path": "thermal/example.py",
+      "responsibility": "Send the bundled synthetic input to an ephemeral local HTTP service."
+    }
+  ],
+  "workflows": [
+    {
+      "id": "dose",
+      "name": "积分与断档范围",
+      "entry": "POST /indicator/dose",
+      "success": "逐时间段输出精确剂量或上下界",
+      "failure": "温度超校准定义域时不外推",
+      "verification": "python3 -B -m thermal.example /indicator/dose",
+      "module_ids": [
+        "curve",
+        "exposure",
+        "http_api"
+      ],
+      "steps": [
+        "解析项目专用输入并验证前置条件",
+        "逐时间段输出精确剂量或上下界"
+      ]
+    },
+    {
+      "id": "disposition",
+      "name": "试验剂量判读",
+      "entry": "POST /indicator/disposition",
+      "success": "给出确定达到、未达或需复核",
+      "failure": "界限跨阈值时不强判",
+      "verification": "python3 -B -m thermal.example /indicator/disposition",
+      "module_ids": [
+        "curve",
+        "exposure",
+        "decision"
+      ],
+      "steps": [
+        "解析项目专用输入并验证前置条件",
+        "给出确定达到、未达或需复核"
+      ]
+    },
+    {
+      "id": "rate-windows",
+      "name": "可确认超率时间段",
+      "entry": "POST /indicator/rate-windows",
+      "success": "输出可确认区间和未知断段",
+      "failure": "不能把两侧观测跨断档合并",
+      "verification": "python3 -B -m thermal.example /indicator/rate-windows",
+      "module_ids": [
+        "curve",
+        "exposure",
+        "decision"
+      ],
+      "steps": [
+        "解析项目专用输入并验证前置条件",
+        "输出可确认区间和未知断段"
+      ]
+    }
+  ],
+  "complexity": {
+    "mechanisms": [
+      "温度以毫摄氏度、时间以秒输入；响应速率按提供的结点分段线性，不外推。",
+      "当相邻样点间距不超过 `max_gap_s` 时按线性温度路径积分并切过所有结点；超过时仅假设温度处于曲线定义域，取最低及最高速率界。",
+      "阈值判读采用含等号的达到规则。速率等于阈值的孤立时刻不列为时段。只处理首末观测之间。"
+    ]
+  }
+}
