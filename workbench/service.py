@@ -1,6 +1,6 @@
 from contextlib import closing
 
-from . import catalog, comparison, dispatch, evidence, history, intake, publication, review, runs
+from . import catalog, comparison, dispatch, evidence, history, intake, paged, publication, review, runs
 from .codec import identifier
 from .db import connect, transaction
 from .errors import Problem
@@ -20,8 +20,12 @@ class Service:
             '/api/publish': lambda db, d: publication.publish(db, d['draft']),
             '/api/restore': lambda db, d: publication.restore(db, d['dataset'], d['revision'], d['generation']),
             '/api/run': lambda db, d: runs.batch(db, self.ops, d['dataset'], d.get('revision'), d['operations']),
+            '/api/paged/page': lambda db, d: paged.accept_page(db, d),
+            '/api/paged/manifest': lambda db, d: paged.record_manifest(db, d),
         }
         self.reads = {
+            '/api/paged/status': lambda db, d: paged.status(db, d),
+            '/api/paged/handover': lambda db, d: paged.handover(db, d),
             '/api/review/history': lambda db, d: {'cases': review.for_run(db, d['run'])},
             '/api/history': lambda db, d: history.for_dataset(db, d['dataset']),
             '/api/compare': lambda db, d: comparison.compare(db, self.ops, d['dataset'], d['before'], d['after'], d['operation']),

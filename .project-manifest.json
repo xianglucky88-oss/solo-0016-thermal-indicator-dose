@@ -195,6 +195,21 @@
       "id": "clock_alignment",
       "path": "thermal/clock_alignment.py",
       "responsibility": "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。"
+    },
+    {
+      "id": "paged_log",
+      "path": "thermal/paged_log.py",
+      "responsibility": "分页回传的检查点结算：页边界不算断档，确失时段不搭桥、保留剂量界。"
+    },
+    {
+      "id": "wb_paged",
+      "path": "workbench/paged.py",
+      "responsibility": "分页受理、持久回执、关机清单与检查点交接入口"
+    },
+    {
+      "id": "wb_paged_schema",
+      "path": "workbench/paged.sql",
+      "responsibility": "分页页与关机清单的持久化约束"
     }
   ],
   "workflows": [
@@ -561,6 +576,26 @@
         "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。",
         "更正原料后对读旧产出、复算并导出原证据"
       ]
+    },
+    {
+      "id": "wb-paged-handover",
+      "name": "分页回传与检查点交接",
+      "entry": "POST /api/paged/page + /api/paged/manifest + /api/paged/status + /api/paged/handover",
+      "success": "页受理回执持久化、跨重启有效；影响检查点的时间都有覆盖或丢失凭据时交付可追查的值或区间",
+      "failure": "同号页内容冲突、页与关机清单矛盾或未确认缺页时不交付",
+      "module_ids": [
+        "wb_paged",
+        "paged_log",
+        "wb_paged_schema",
+        "wb_db",
+        "curve"
+      ],
+      "verification": "python3 -B examples/paged_log_check.py",
+      "steps": [
+        "受理分页并写入持久回执",
+        "登记关机清单与确失时段",
+        "按覆盖与丢失凭据结算检查点"
+      ]
     }
   ],
   "complexity": {
@@ -578,7 +613,9 @@
       "校验证据、审批与当前指针后签发，历史凭据重试不重新决策",
       "按同一包装内两个空间测点的逐时较低温度精确积分，保留交换时点和分段剂量界。",
       "在各作业窗内按真实测点覆盖截取响应积分，保留该窗的剂量界及来源切换。",
-      "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。"
+      "按两次同步见证将内点记录映射到试验时钟，再按物理秒复查冷点剂量与覆盖。",
+      "页受理与检查点交接分离，收妥回执跨重启有效",
+      "页边界不算测温中断，确失时段不搭桥、保留剂量上下界"
     ]
   }
 }

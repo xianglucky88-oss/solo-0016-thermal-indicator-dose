@@ -90,6 +90,10 @@
     {
       "workflow_id": "wb-clock-alignment",
       "command": "python3 -B examples/workbench_check.py clock-alignment"
+    },
+    {
+      "workflow_id": "wb-paged-handover",
+      "command": "python3 -B examples/paged_log_check.py"
     }
   ]
 }
